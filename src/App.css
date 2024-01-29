@@ -26,7 +26,7 @@ body {
   color: white;
 }
 
-/* Styles for Marathon Plan Display */
+
 .marathon-plan-container {
   overflow-x: auto;
   white-space: nowrap;
@@ -124,7 +124,7 @@ body {
   margin-right: 10px;
 }
 
-/* Styles for the login button */
+
 .login-button {
   background-color: orange;
   color: white;
