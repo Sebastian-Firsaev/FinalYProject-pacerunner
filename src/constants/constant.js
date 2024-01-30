@@ -1,12 +1,12 @@
 import { AccessTime, DirectionsRun, Favorite, Speed } from "@mui/icons-material";
 
 export const trainingPlan = {
-  Week1_Day1: { activity: '4.8 km run', pace: '5:30' },
+  Week1_Day1: { activity: '4.8 km run', pace: '1:00' },
   Week1_Day2: { activity: '8.1 km run', pace: '5:30' },
   Week1_Day3: { activity: '4.8 km run', pace: '5:30' },
   Week1_Day4: { activity: '3 x hill', pace: '5:30' },
   Week1_Day5: { activity: 'Rest', pace: '' },
-  Week1_Day6: { activity: '8.1 km pace', pace: '5:30' },
+  Week1_Day6: { activity: '8.1 km', pace: '5:30' },
   Week1_Day7: { activity: '16.1 long run', pace: '5:30' },
 };
 

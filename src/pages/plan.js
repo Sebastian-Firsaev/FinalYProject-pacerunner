@@ -3,12 +3,12 @@ import { Box, Button, CircularProgress, Paper, Dialog, DialogTitle, DialogConten
 import TrainingData from '../components/training_data';
 import StravaApi from '../service/strava_api';
 import { useNavigate } from 'react-router-dom';
-import { getDatabase, onValue, ref } from 'firebase/database';
+import { getDatabase, ref, get, onValue, update } from 'firebase/database';
 import Header from '../components/header';
 import Footer from '../components/footer'; 
 import { exampleTrainingData, exampleTrainingPlan, iconMapping } from '../constants/constant';
 import UserHealthForm from './UserHealthForm'; 
-
+import { generatePace } from '../utils/generatePace'; 
 const Plan = () => {
   const storedCode = localStorage.getItem('code');
   const [loading, setLoading] = useState(false);
@@ -16,8 +16,7 @@ const Plan = () => {
   const [trainingData, setTrainingData] = useState(null);
   const [trainingPlan, setTrainingPlan] = useState(null);
   const [user, setUser] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false); // State for dialog control
-
+  const [openDialog, setOpenDialog] = useState(false); 
   const combinedTrainingData = exampleTrainingData.map(data => ({
     ...data,
     icon: iconMapping[data.label],
@@ -47,7 +46,7 @@ const Plan = () => {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const getLatestPlan = async () => {
     setLoading(true);
@@ -59,7 +58,7 @@ const Plan = () => {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (!storedCode) {
@@ -76,6 +75,8 @@ const Plan = () => {
       const userData = snapshot.val();
       setTrainingData(userData?.activity || []);
       setTrainingPlan(userData?.trainingPlan || {});
+      const firstname = userData?.stravaData?.firstname; 
+      setUser({...storedUser.providerData[0], firstname}); 
     });
 
     return () => {
@@ -91,13 +92,47 @@ const Plan = () => {
     setOpenDialog(false);
   };
 
+// Function to update the training plan with calculated pace 
+const startTrainingPlan1 = async () => {
+  setLoading(true);
+  try {
+    const userId = localStorage.getItem("userId");
+    const db = getDatabase();
+
+    await getLatestPlan();
+
+    const userHealthRef = ref(db, `users/${userId}/healthInfo`);
+    const userHealthData = await (await get(userHealthRef)).val();
+
+    if (!userHealthData || !userHealthData.restingHeartRate || !userHealthData.age) {
+      throw new Error('Required health information is missing');
+    }
+
+    const averageTPace = generatePace(userHealthData.age, userHealthData.restingHeartRate);
+    const numberOfWeeks = 1; 
+    const daysPerWeek = 7;   
+    for (let week = 1; week <= numberOfWeeks; week++) {
+      for (let day = 1; day <= daysPerWeek; day++) {
+        const trainingPlanRef = ref(db, `users/${userId}/trainingPlan/Week${week}_Day${day}`);
+        await update(trainingPlanRef, { pace: averageTPace });
+      }
+    }
+  } catch (error) {
+    console.error('Error starting Training Plan 1:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  
+
   return (
     <>
-      {user && (
-        <Paper elevation={3} sx={{ padding: '16px', marginBottom: '20px', backgroundColor: 'orange' }}>
-          <Header user={user} />
-        </Paper>
-      )}
+     {user && (
+  <Paper elevation={3} sx={{ padding: '16px', marginBottom: '20px', backgroundColor: 'orange' }}>
+    <Header user={user} firstname={user.firstname} />
+  </Paper>
+)}
 
       <Footer />
 
@@ -124,7 +159,7 @@ const Plan = () => {
               disabled={loading}
               sx={{ marginRight: '8px' }}
             >
-              {loading ? <CircularProgress size={24} /> : 'Update Run Data'}
+              {loading ? <CircularProgress size={24} /> : 'upload Run from Strava'}
             </Button>
 
             <Button
@@ -133,13 +168,13 @@ const Plan = () => {
               onClick={getLatestActivity}
               disabled={loading}
             >
-              {loading ? <CircularProgress size={24} /> : 'Upload Last Run'}
+              {loading ? <CircularProgress size={24} /> : 'update Last Run'}
             </Button>
 
             <Button
               variant="contained"
               color="primary"
-              onClick={getLatestPlan}
+              onClick={startTrainingPlan1}
               disabled={loading}
             >
               {loading ? <CircularProgress size={24} /> : 'Start Training Plan 1'}
@@ -152,5 +187,3 @@ const Plan = () => {
 };
 
 export default Plan;
-
-

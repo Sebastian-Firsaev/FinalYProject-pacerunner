@@ -85,4 +85,3 @@ const TrainingPlan = ({ trainingPlan, selectedDay, onDayChange }) => {
 };
 
 export default TrainingData;
-
