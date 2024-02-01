@@ -25,6 +25,18 @@ const TrainingPlan = {
       ErrorToast(error);
     }
   },
+  addLapsInfoToDb: async (userId, activityId, lapsData) => {
+    try {
+      const db = getDatabase();
+      const lapsRef = ref(db, `users/${userId}/activities/${activityId}/laps`);
+      await set(lapsRef, lapsData);
+      SuccessToast("Laps info has been updated successfully!");
+    } catch (error) {
+      console.error('Error storing laps info in Firebase:', error);
+      ErrorToast(error);
+    }
+  },
+  
   modifyTrainingPlan: async (userId, modifiedPlan) => {
     try {
       const db = getDatabase();
@@ -38,6 +50,8 @@ const TrainingPlan = {
     }
   },
   
+  
+
 };
 
 export default TrainingPlan;

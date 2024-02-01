@@ -10,9 +10,9 @@ export function generatePace(age, restingHeartRate) {
 
     // Convert VO2 Max to a running pace (minutes per kilometer)
     // common rough estimate is that each VO2 Max point equals about 1 minute per mile.
-    // For kilometers, this is approximately 0.62 minutes per kilometer per VO2 Max point.
-    const runningPacePerKm = 0.62 * (60 - vo2Max); 
+    
+    const runningPacePerMile = 1 * (60 - vo2Max); 
 
     
-    return runningPacePerKm.toFixed(2);
+    return runningPacePerMile.toFixed(2);
 }

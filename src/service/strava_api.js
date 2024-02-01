@@ -35,6 +35,7 @@ const StravaApi = {
       localStorage.removeItem("code");
     }
   },
+  
    getLatestActivity : async (id, accessToken) => {
     try {
       const response = await axios.get(`${STRAVA_API_BASE_URL}/athlete/activities`, {
@@ -57,8 +58,22 @@ const StravaApi = {
       console.error('Error fetching Strava activity:', error);
       throw error;
     }
-  }
-  ,
+  },
+  getActivityLaps: async (activityId, accessToken) => {
+    try {
+      const response = await axios.get(`${STRAVA_API_BASE_URL}/activities/${activityId}/laps`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+  
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching activity laps:', error);
+      throw error;
+    }
+  },
+
   getTrainingPlan : async (id) => {
     try {
       await TrainingPlan.modifyTrainingPlan(id, trainingPlan);
