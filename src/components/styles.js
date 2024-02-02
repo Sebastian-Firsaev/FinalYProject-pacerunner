@@ -4,7 +4,7 @@ export const paperStyle = {
     padding: '20px',
     borderRadius: '15px',
     boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
-    marginBottom: '30px',
+    marginBottom: '60px',
     textAlign: 'center',
     fontSize: '1.8rem',
     width: '80%',
@@ -20,3 +20,4 @@ export const paperStyle = {
       backgroundColor: '#1976D2',
     },
   };
+  

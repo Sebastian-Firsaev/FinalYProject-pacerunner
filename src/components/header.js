@@ -1,23 +1,22 @@
-import React from 'react';
-import { Box, Typography, Button } from '@mui/material';
-import { getAuth, signOut } from 'firebase/auth';
+import React, { useState } from 'react';
+import { Box, Typography, Button, Menu, MenuItem } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-const Header = ({ user, firstname }) => {
-  const navigate = useNavigate();
 
-  const handleSignOut = async () => {
-    try {
-      const auth = getAuth();
-      await signOut(auth);
-      localStorage.removeItem("user");
-      localStorage.removeItem("code");
-      localStorage.removeItem("userId");
-      localStorage.removeItem("accessToken");
-      navigate('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+const Header = ({ user, firstname, onMenuItemClick }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleMenuItemClick = (action) => {
+    handleClose();
+    onMenuItemClick(action);
   };
 
   return (
@@ -25,9 +24,23 @@ const Header = ({ user, firstname }) => {
       <Typography variant="h5" color="white" mb={2}>
         Welcome, {firstname || user.displayName }!
       </Typography>
-      <Button variant="contained" color="primary" onClick={handleSignOut}>
-        Sign Out
-      </Button>
+
+      <div>
+        <Button variant="contained" color="primary" onClick={handleMenuClick}>
+          Options
+        </Button>
+        <Menu
+          id="simple-menu"
+          anchorEl={anchorEl}
+          keepMounted
+          open={Boolean(anchorEl)}
+          onClose={handleClose}
+        >
+          <MenuItem onClick={() => handleMenuItemClick('addRunnerDetails')}>Add Runner Details</MenuItem>
+          <MenuItem onClick={() => handleMenuItemClick('startTrainingPlan')}>Start Training Plan</MenuItem>
+          <MenuItem onClick={() => handleMenuItemClick('fetchAndSaveActivity')}>Fetch and Save Activity & Laps</MenuItem>
+        </Menu>
+      </div>
     </Box>
   );
 };

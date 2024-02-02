@@ -171,94 +171,85 @@ const Plan = () => {
       setLoading(false);
     }
   };
+  const handleHeaderMenuAction = (action) => {
+    switch (action) {
+      case 'addRunnerDetails':
+        handleOpenDialog(); 
+        break;
+      case 'startTrainingPlan':
+        startTrainingPlan1();
+      case 'fetchAndSaveActivity':
+        fetchActivityAndLaps(); 
+        break;
+      
+    }
+  };
 
   return (
     <>
       {user && (
         <Paper elevation={3} sx={{ padding: '16px', marginBottom: '20px', backgroundColor: 'orange' }}>
-          <Header user={user} firstname={user.firstname} />
+          <Header user={user} firstname={user.firstname} onMenuItemClick={handleHeaderMenuAction} />
         </Paper>
       )}
-
+  
       <Footer />
-
+  
       <Box display="flex" flexDirection="column" alignItems="center" marginBottom={20}>
         
-      <Paper className="activity-details-box" sx={paperStyle}>
+      <Paper className="activity-details-box" sx={{ ...paperStyle, marginBottom: '20px' }}> 
         <TrainingData trainingData={trainingData || combinedTrainingData} />
       </Paper>
-
+  
       {recommendedPace && (
-        <Paper className="recommended-pace-box" sx={paperStyle}>
+        <Paper className="recommended-pace-box" sx={{ ...paperStyle, marginBottom: '20px' }}> 
           <Typography variant="h5">
-            Your Recommended Starting Pace: {recommendedPace} per mile
+            Your Standard Pace: {recommendedPace} per mile
           </Typography>
         </Paper>
       )}
       {recommendedPaceNextRun && (
-    <Paper className="recommended-pace-next-run-box" sx={paperStyle}>
-      <Typography variant="h5">
-        Recommended pace for next run: {recommendedPaceNextRun} per mile
-      </Typography>
-    </Paper>
-  )}
-
-        <Button variant="contained" color="primary" onClick={handleOpenDialog} sx={addButtonStyle}>
-          Add Runner Details
-        </Button>
-
-        <Dialog open={openDialog} onClose={handleCloseDialog}>
-          <DialogTitle>Add Runner Details</DialogTitle>
-          <DialogContent>
-            <UserHealthForm />
-          </DialogContent>
-        </Dialog>
-
-        {storedCode && (
-          <Box mt={2} display="flex" gap={2}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={fetchLastData}
-              disabled={loading}
-              sx={addButtonStyle}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Upload Run from Strava'}
-            </Button>
-
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={getLatestActivity}
-              disabled={loading}
-              sx={addButtonStyle}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Update Last Run'}
-            </Button>
-            <Button
-        variant="contained"
-        color="primary"
-        onClick={fetchActivityAndLaps}
-        disabled={loading}
-        sx={addButtonStyle}
-      >
-        {loading ? <CircularProgress size={24} /> : 'Fetch and Save Activity & Laps'}
-      </Button>
-
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={startTrainingPlan1}
-              disabled={loading}
-              sx={addButtonStyle}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Start Training Plan 1'}
-            </Button>
-          </Box>
-        )}
-      </Box>
+        <Paper className="recommended-pace-next-run-box" sx={{ ...paperStyle, marginBottom: '20px' }}>
+          <Typography variant="h5">
+            Recommended pace for next run: {recommendedPaceNextRun} per mile
+          </Typography>
+        </Paper>
+      )}
+  
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Add Runner Details</DialogTitle>
+        <DialogContent>
+          <UserHealthForm />
+        </DialogContent>
+      </Dialog>
+  
+      {storedCode && (
+        <Box mt={2} display="flex" flexDirection="column" alignItems="center" gap={2}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={fetchLastData}
+            disabled={loading}
+            sx={addButtonStyle}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Upload Run from Strava'}
+          </Button>
+  
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={getLatestActivity}
+            disabled={loading}
+            sx={addButtonStyle}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Update Last Run'}
+          </Button>
+        </Box>
+      )}
+    </Box>
     </>
   );
+  
 };
 
 export default Plan;
