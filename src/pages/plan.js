@@ -81,7 +81,7 @@ const Plan = () => {
     } else if (activityDescription.toLowerCase().includes(' run')) {
       return roadImage; 
     } else {
-      return roadImage; // Default image or specify a default one
+      return roadImage; // Default image 
     }
   }
 
