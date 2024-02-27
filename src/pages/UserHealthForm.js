@@ -6,6 +6,7 @@ import { getDatabase, ref, set } from 'firebase/database';
 const UserHealthForm = () => {
   const [age, setAge] = useState('');
   const [heartRate, setHeartRate] = useState('');
+  const [marathonPace, setMarathonPace] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
@@ -14,7 +15,7 @@ const UserHealthForm = () => {
     const userHealthRef = ref(db, `users/${userId}/healthInfo`);
 
     try {
-      await set(userHealthRef, { age, restingHeartRate: heartRate });
+      await set(userHealthRef, { age, restingHeartRate: heartRate, marathonPace });
       alert('Health information updated successfully!');
       navigate('/'); 
     } catch (error) {
@@ -52,6 +53,15 @@ const UserHealthForm = () => {
             margin="normal"
             value={heartRate}
             onChange={(e) => setHeartRate(e.target.value)}
+          />
+          <TextField
+            type="text"
+            label="Marathon Pace"
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            value={marathonPace}
+            onChange={(e) => setMarathonPace(e.target.value)}
           />
           <Button variant="contained" color="primary" onClick={handleSubmit}>
             Submit

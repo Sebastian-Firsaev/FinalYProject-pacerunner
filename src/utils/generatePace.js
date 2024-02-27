@@ -15,4 +15,5 @@ export function generatePace(age, restingHeartRate) {
 
     
     return runningPacePerMile.toFixed(2);
+    
 }

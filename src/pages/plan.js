@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, CircularProgress, Paper, Dialog, DialogTitle, DialogContent, Typography } from '@mui/material';
 import TrainingData from '../components/training_data';
+import SwipeableViews from 'react-swipeable-views';
 import StravaApi from '../service/strava_api';
 import { useNavigate } from 'react-router-dom';
 import { getDatabase, ref, get, onValue, update } from 'firebase/database';
@@ -17,9 +18,10 @@ const Plan = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [trainingData, setTrainingData] = useState(null);
-  const [trainingPlan, setTrainingPlan] = useState(null);
+  const [trainingPlan, setTrainingPlan] = useState({});
+  const [currentIndex, setCurrentIndex] = useState(0); // State to track the current index for swipe view
   const [user, setUser] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false); 
+  const [openDialog, setOpenDialog] = useState(false);
   const [recommendedPace, setRecommendedPace] = useState('');
   const [recommendedPaceNextRun, setRecommendedPaceNextRun] = useState('');
 
@@ -75,10 +77,10 @@ const Plan = () => {
       const lastActivityPace = parseFloat(latestActivity.average_speed);
   
       if (lastActivityPace > parseFloat(recommendedPace)) {
-        const newPace = recommendedPace * 1.05;
+        const newPace = recommendedPace * 1.02;
         setRecommendedPaceNextRun(newPace.toFixed(2));
       } if (lastActivityPace < parseFloat(recommendedPace)) {
-        const newPace = recommendedPace * 0.95;
+        const newPace = recommendedPace * 0.98;
         setRecommendedPaceNextRun(newPace.toFixed(2));
       }else {
         setRecommendedPaceNextRun(recommendedPace);
@@ -118,10 +120,9 @@ const Plan = () => {
       const userData = snapshot.val();
       setTrainingData(userData?.activity || []);
       setTrainingPlan(userData?.trainingPlan || {});
-      const firstname = userData?.stravaData?.firstname; 
-      setUser({...storedUser.providerData[0], firstname}); 
+      const firstname = userData?.stravaData?.firstname;
+      setUser({ ...storedUser.providerData[0], firstname });
 
-      // Calculate recommended pace
       if (userData?.healthInfo?.age && userData?.healthInfo?.restingHeartRate) {
         const pace = generatePace(userData.healthInfo.age, userData.healthInfo.restingHeartRate);
         setRecommendedPace(pace);
@@ -146,31 +147,46 @@ const Plan = () => {
     try {
       const userId = localStorage.getItem("userId");
       const db = getDatabase();
-
+  
       await getLatestPlan();
-
-      const userHealthRef = ref(db, `users/${userId}/healthInfo`);
-      const userHealthData = await (await get(userHealthRef)).val();
-
-      if (!userHealthData || !userHealthData.restingHeartRate || !userHealthData.age) {
-        throw new Error('Required health information is missing');
+  
+      
+      const numericRecommendedPace = parseFloat(recommendedPace);
+      if (isNaN(numericRecommendedPace)) {
+        throw new Error('Recommended pace is not a valid number');
       }
-
-      const averageTPace = generatePace(userHealthData.age, userHealthData.restingHeartRate);
-      const numberOfWeeks = 1; 
-      const daysPerWeek = 7;   
-      for (let week = 1; week <= numberOfWeeks; week++) {
-        for (let day = 1; day <= daysPerWeek; day++) {
-          const trainingPlanRef = ref(db, `users/${userId}/trainingPlan/Week${week}_Day${day}`);
-          await update(trainingPlanRef, { pace: averageTPace });
-        }
-      }
+  
+      // Fetch current training plan
+      const trainingPlanRef = ref(db, `users/${userId}/trainingPlan`);
+      const snapshot = await get(trainingPlanRef);
+      const currentTrainingPlan = snapshot.val();
+  
+      Object.keys(currentTrainingPlan).forEach(async (week) => {
+        currentTrainingPlan[week].days.forEach(async (day, index) => {
+          let adjustedPace = numericRecommendedPace; // Use numericRecommendedPace here
+  
+          // Adjust pace based on the type of run
+          if (day.activity.includes('easy run')) {
+            adjustedPace *= 1.05; // Slightly slower for easy runs
+          } else if (day.activity.includes('tempo')) {
+            adjustedPace *= 0.95; // Slightly faster for tempo runs
+          } else if (day.activity.includes('long run')) {
+            adjustedPace *= 1.02; // Adjust for long runs
+          }
+  
+          // Update the pace for each day in Firebase
+          const dayRef = ref(db, `users/${userId}/trainingPlan/${week}/days/${index}`);
+          await update(dayRef, { ...day, pace: adjustedPace.toFixed(2) });
+        });
+      });
+  
     } catch (error) {
-      console.error('Error starting Training Plan 1:', error);
+      console.error('Error starting Training Plan:', error);
     } finally {
       setLoading(false);
     }
   };
+  
   const handleHeaderMenuAction = (action) => {
     switch (action) {
       case 'addRunnerDetails':
@@ -192,38 +208,82 @@ const Plan = () => {
           <Header user={user} firstname={user.firstname} onMenuItemClick={handleHeaderMenuAction} />
         </Paper>
       )}
-  
+
       <Footer />
-  
+
       <Box display="flex" flexDirection="column" alignItems="center" marginBottom={20}>
         
-      <Paper className="activity-details-box" sx={{ ...paperStyle, marginBottom: '20px' }}> 
-        <TrainingData trainingData={trainingData || combinedTrainingData} />
-      </Paper>
-  
-      {recommendedPace && (
-        <Paper className="recommended-pace-box" sx={{ ...paperStyle, marginBottom: '20px' }}> 
-          <Typography variant="h5">
-            Your Standard Pace: {recommendedPace} per mile
-          </Typography>
+        <Paper className="activity-details-box" sx={{ ...paperStyle }}> 
+          <TrainingData trainingData={trainingData || exampleTrainingData.map(data => ({
+            ...data,
+            icon: iconMapping[data.label],
+          }))} />
         </Paper>
-      )}
-      {recommendedPaceNextRun && (
-        <Paper className="recommended-pace-next-run-box" sx={{ ...paperStyle, marginBottom: '20px' }}>
-          <Typography variant="h5">
-            Recommended pace for next run: {recommendedPaceNextRun} per mile
-          </Typography>
-        </Paper>
-      )}
-  
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Add Runner Details</DialogTitle>
-        <DialogContent>
-          <UserHealthForm />
-        </DialogContent>
-      </Dialog>
-  
-      {storedCode && (
+
+        {recommendedPace && (
+          <Paper className="recommended-pace-box" sx={{ ...paperStyle }}> 
+            <Typography variant="h5">
+              Your Standard Pace: {recommendedPace} per mile
+            </Typography>
+          </Paper>
+        )}
+
+        {recommendedPaceNextRun && (
+          <Paper className="recommended-pace-next-run-box" sx={{ ...paperStyle }}>
+            <Typography variant="h5">
+              Recommended pace for next run: {recommendedPaceNextRun} per mile
+            </Typography>
+          </Paper>
+        )}
+
+        <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <DialogTitle>Add Runner Details</DialogTitle>
+          <DialogContent>
+            <UserHealthForm />
+          </DialogContent>
+        </Dialog>
+
+        
+        {Object.keys(trainingPlan).length > 0 && (
+          <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden' }}> 
+            <SwipeableViews
+              index={currentIndex}
+              onChangeIndex={(index) => setCurrentIndex(index)}
+              enableMouseEvents
+            >
+              {Object.keys(trainingPlan).map((week) =>
+                trainingPlan[week].days.map((day, index) => (
+                  <Box key={index} p={2} textAlign="center">
+                    <Typography variant="h6">Day: {index + 1}</Typography>
+                    <Typography>Activity: {day.activity}</Typography>
+                    <Typography>Pace: {day.pace} per mile</Typography>
+                  </Box>
+                ))
+              )}
+            </SwipeableViews>
+          </Paper>
+        )}
+
+        
+        <Box mt={2}>
+          <Button
+            variant="contained"
+            disabled={currentIndex === 0}
+            onClick={() => setCurrentIndex(currentIndex - 1)}
+            sx={{ mr: 1 }}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="contained"
+            disabled={currentIndex === Object.keys(trainingPlan).reduce((acc, week) => acc + trainingPlan[week].days.length, 0) - 1}
+            onClick={() => setCurrentIndex(currentIndex + 1)}
+          >
+            Next
+          </Button>
+        </Box>
+
+        
         <Box mt={2} display="flex" flexDirection="column" alignItems="center" gap={2}>
           <Button
             variant="contained"
@@ -234,7 +294,7 @@ const Plan = () => {
           >
             {loading ? <CircularProgress size={24} /> : 'Upload Run from Strava'}
           </Button>
-  
+
           <Button
             variant="contained"
             color="primary"
@@ -245,11 +305,9 @@ const Plan = () => {
             {loading ? <CircularProgress size={24} /> : 'Update Last Run'}
           </Button>
         </Box>
-      )}
-    </Box>
+      </Box>
     </>
   );
-  
 };
 
 export default Plan;
