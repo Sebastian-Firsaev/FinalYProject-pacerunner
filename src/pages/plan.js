@@ -12,6 +12,8 @@ import UserHealthForm from './UserHealthForm';
 import { generatePace } from '../utils/generatePace'; 
 import { paperStyle, addButtonStyle} from '../components/styles';
 import TrainingPlan from '../service/training_plan';
+import roadImage from '../constants/road.png'
+
 
 const Plan = () => {
   const storedCode = localStorage.getItem('code');
@@ -65,6 +67,23 @@ const Plan = () => {
       setLoading(false);
     }
   };
+  function getImageUrlForActivity(activityDescription) {
+    if (activityDescription.toLowerCase().includes('rest')) {
+      return roadImage; 
+    } else if (activityDescription.toLowerCase().includes('easy run')) {
+      return roadImage; 
+    } else if (activityDescription.toLowerCase().includes('tempo')) {
+      return roadImage; 
+    } else if (activityDescription.toLowerCase().includes('hill')) {
+      return roadImage; 
+    } else if (activityDescription.toLowerCase().includes('long run')) {
+      return roadImage; 
+    } else if (activityDescription.toLowerCase().includes(' run')) {
+      return roadImage; 
+    } else {
+      return roadImage; // Default image or specify a default one
+    }
+  }
 
   const getLatestActivity = async () => {
     setLoading(true);
@@ -163,7 +182,7 @@ const Plan = () => {
   
       Object.keys(currentTrainingPlan).forEach(async (week) => {
         currentTrainingPlan[week].days.forEach(async (day, index) => {
-          let adjustedPace = numericRecommendedPace; // Use numericRecommendedPace here
+          let adjustedPace = numericRecommendedPace; 
   
           // Adjust pace based on the type of run
           if (day.activity.includes('easy run')) {
@@ -245,45 +264,25 @@ const Plan = () => {
 
         
         {Object.keys(trainingPlan).length > 0 && (
-          <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden' }}> 
-            <SwipeableViews
-              index={currentIndex}
-              onChangeIndex={(index) => setCurrentIndex(index)}
-              enableMouseEvents
-            >
-              {Object.keys(trainingPlan).map((week) =>
-                trainingPlan[week].days.map((day, index) => (
-                  <Box key={index} p={2} textAlign="center">
-                    <Typography variant="h6">Day: {index + 1}</Typography>
-                    <Typography>Activity: {day.activity}</Typography>
-                    <Typography>Pace: {day.pace} per mile</Typography>
-                  </Box>
-                ))
-              )}
-            </SwipeableViews>
-          </Paper>
+    <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden', backgroundColor: 'orange' }}>
+      <SwipeableViews
+        index={currentIndex}
+        onChangeIndex={(index) => setCurrentIndex(index)}
+        enableMouseEvents
+      >
+        {Object.keys(trainingPlan).map((week) =>
+          trainingPlan[week].days.map((day, index) => (
+            <Box key={index} p={2} textAlign="center">
+              <Typography variant="h6">Day: {index + 1}</Typography>
+              <Typography>Activity: {day.activity}</Typography>
+              <Typography>Pace: {day.pace} per mile</Typography>
+              <img src={getImageUrlForActivity(day.activity)} alt="Activity" style={{ maxWidth: '100%', height: 'auto' }} />
+            </Box>
+          ))
         )}
-
-        
-        <Box mt={2}>
-          <Button
-            variant="contained"
-            disabled={currentIndex === 0}
-            onClick={() => setCurrentIndex(currentIndex - 1)}
-            sx={{ mr: 1 }}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="contained"
-            disabled={currentIndex === Object.keys(trainingPlan).reduce((acc, week) => acc + trainingPlan[week].days.length, 0) - 1}
-            onClick={() => setCurrentIndex(currentIndex + 1)}
-          >
-            Next
-          </Button>
-        </Box>
-
-        
+      </SwipeableViews>
+    </Paper>
+  )}
         <Box mt={2} display="flex" flexDirection="column" alignItems="center" gap={2}>
           <Button
             variant="contained"
