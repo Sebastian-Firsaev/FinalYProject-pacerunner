@@ -4,16 +4,14 @@ import TrainingData from '../components/training_data';
 import SwipeableViews from 'react-swipeable-views';
 import StravaApi from '../service/strava_api';
 import { useNavigate } from 'react-router-dom';
-import { getDatabase, ref, get, onValue, update } from 'firebase/database';
+import { getDatabase, ref, onValue, update } from 'firebase/database';
 import Header from '../components/header';
 import Footer from '../components/footer'; 
-import { exampleTrainingData, exampleTrainingPlan, iconMapping } from '../constants/constant';
+import { exampleTrainingData, iconMapping } from '../constants/constant';
 import UserHealthForm from './UserHealthForm'; 
 import { generatePace } from '../utils/generatePace'; 
-import { paperStyle, addButtonStyle} from '../components/styles';
-import TrainingPlan from '../service/training_plan';
-import roadImage from '../constants/road.png'
-
+import { paperStyle, addButtonStyle } from '../components/styles';
+import roadImage from '../constants/road.png';
 
 const Plan = () => {
   const storedCode = localStorage.getItem('code');
@@ -21,17 +19,11 @@ const Plan = () => {
   const navigate = useNavigate();
   const [trainingData, setTrainingData] = useState(null);
   const [trainingPlan, setTrainingPlan] = useState({});
-  const [currentIndex, setCurrentIndex] = useState(0); // State to track the current index for swipe view
   const [user, setUser] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [recommendedPace, setRecommendedPace] = useState('');
   const [recommendedPaceNextRun, setRecommendedPaceNextRun] = useState('');
-
-
-  const combinedTrainingData = exampleTrainingData.map(data => ({
-    ...data,
-    icon: iconMapping[data.label],
-  }));
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
 
   const fetchLastData = async () => {
     setLoading(true);
@@ -45,45 +37,16 @@ const Plan = () => {
       setLoading(false);
     }
   };
-  const fetchActivityAndLaps = async () => {
+
+  const updateCurrentDay = async () => {
     setLoading(true);
     try {
-      const id = localStorage.getItem("userId");
-      const accessToken = localStorage.getItem("accessToken");
-      
-      // Fetch the latest activity
-      const latestActivity = await StravaApi.getLatestActivity(id, accessToken);
-
-      if (latestActivity) {
-        // Fetch the laps for the latest activity
-        const lapsData = await StravaApi.getActivityLaps(latestActivity.id, accessToken);
-        await TrainingPlan.addLapsInfoToDb(id, latestActivity.id, lapsData);
-
-        
-      }
-    } catch (error) {
-      console.error("Error fetching activity and laps: ", error);
+      await getLatestActivity();
+      setCurrentDayIndex(currentDayIndex + 1);
     } finally {
       setLoading(false);
     }
   };
-  function getImageUrlForActivity(activityDescription) {
-    if (activityDescription.toLowerCase().includes('rest')) {
-      return roadImage; 
-    } else if (activityDescription.toLowerCase().includes('easy run')) {
-      return roadImage; 
-    } else if (activityDescription.toLowerCase().includes('tempo')) {
-      return roadImage; 
-    } else if (activityDescription.toLowerCase().includes('hill')) {
-      return roadImage; 
-    } else if (activityDescription.toLowerCase().includes('long run')) {
-      return roadImage; 
-    } else if (activityDescription.toLowerCase().includes(' run')) {
-      return roadImage; 
-    } else {
-      return roadImage; // Default image 
-    }
-  }
 
   const getLatestActivity = async () => {
     setLoading(true);
@@ -91,20 +54,18 @@ const Plan = () => {
       const id = localStorage.getItem("userId");
       const accessToken = localStorage.getItem("accessToken");
       const latestActivity = await StravaApi.getLatestActivity(id, accessToken);
-      
-     
+
       const lastActivityPace = parseFloat(latestActivity.average_speed);
-  
+
       if (lastActivityPace > parseFloat(recommendedPace)) {
         const newPace = recommendedPace * 1.02;
         setRecommendedPaceNextRun(newPace.toFixed(2));
-      } if (lastActivityPace < parseFloat(recommendedPace)) {
+      } else if (lastActivityPace < parseFloat(recommendedPace)) {
         const newPace = recommendedPace * 0.98;
         setRecommendedPaceNextRun(newPace.toFixed(2));
-      }else {
+      } else {
         setRecommendedPaceNextRun(recommendedPace);
       }
-  
     } catch (error) {
       console.log("error retrieving latest activity: ", error);
     } finally {
@@ -112,15 +73,66 @@ const Plan = () => {
     }
   };
 
-  const getLatestPlan = async () => {
+  const fetchActivityAndLaps = async () => {
     setLoading(true);
     try {
       const id = localStorage.getItem("userId");
-      await StravaApi.getTrainingPlan(id);
+      const accessToken = localStorage.getItem("accessToken");
+      const latestActivity = await StravaApi.getLatestActivity(id, accessToken);
+      if (latestActivity) {
+        const lapsData = await StravaApi.getActivityLaps(latestActivity.id, accessToken);
+        console.log("Laps data added to DB:", lapsData);
+      }
     } catch (error) {
-      console.log("error retrieving latest plan: ", error);
+      console.error("Error fetching activity and laps:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getImageUrlForActivity = (activityDescription) => {
+    return roadImage;
+  };
+
+  const getLatestPlan = async () => {
+    setLoading(true);
+    try {
+      console.log("Fetching latest training plan");
+    } catch (error) {
+      console.error("Error retrieving latest plan:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startTrainingPlan1 = async () => {
+    setLoading(true);
+    try {
+      console.log("Starting new training plan");
+    } catch (error) {
+      console.error("Error starting Training Plan:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenDialog = () => setOpenDialog(true);
+
+  const handleCloseDialog = () => setOpenDialog(false);
+
+  const handleHeaderMenuAction = (action) => {
+    switch (action) {
+      case 'addRunnerDetails':
+        handleOpenDialog();
+        break;
+      case 'startTrainingPlan':
+        startTrainingPlan1();
+        break;
+      case 'fetchAndSaveActivity':
+        fetchActivityAndLaps();
+        break;
+      default:
+        console.log("Unhandled action:", action);
     }
   };
 
@@ -153,73 +165,6 @@ const Plan = () => {
     };
   }, [navigate, storedCode]);
 
-  const handleOpenDialog = () => {
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
-
-  const startTrainingPlan1 = async () => {
-    setLoading(true);
-    try {
-      const userId = localStorage.getItem("userId");
-      const db = getDatabase();
-  
-      await getLatestPlan();
-  
-      
-      const numericRecommendedPace = parseFloat(recommendedPace);
-      if (isNaN(numericRecommendedPace)) {
-        throw new Error('Recommended pace is not a valid number');
-      }
-  
-      // Fetch current training plan
-      const trainingPlanRef = ref(db, `users/${userId}/trainingPlan`);
-      const snapshot = await get(trainingPlanRef);
-      const currentTrainingPlan = snapshot.val();
-  
-      Object.keys(currentTrainingPlan).forEach(async (week) => {
-        currentTrainingPlan[week].days.forEach(async (day, index) => {
-          let adjustedPace = numericRecommendedPace; 
-  
-          // Adjust pace based on the type of run
-          if (day.activity.includes('easy run')) {
-            adjustedPace *= 1.05; // Slightly slower for easy runs
-          } else if (day.activity.includes('tempo')) {
-            adjustedPace *= 0.95; // Slightly faster for tempo runs
-          } else if (day.activity.includes('long run')) {
-            adjustedPace *= 1.02; // Adjust for long runs
-          }
-  
-          // Update the pace for each day in Firebase
-          const dayRef = ref(db, `users/${userId}/trainingPlan/${week}/days/${index}`);
-          await update(dayRef, { ...day, pace: adjustedPace.toFixed(2) });
-        });
-      });
-  
-    } catch (error) {
-      console.error('Error starting Training Plan:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleHeaderMenuAction = (action) => {
-    switch (action) {
-      case 'addRunnerDetails':
-        handleOpenDialog(); 
-        break;
-      case 'startTrainingPlan':
-        startTrainingPlan1();
-      case 'fetchAndSaveActivity':
-        fetchActivityAndLaps(); 
-        break;
-      
-    }
-  };
-
   return (
     <>
       {user && (
@@ -231,7 +176,6 @@ const Plan = () => {
       <Footer />
 
       <Box display="flex" flexDirection="column" alignItems="center" marginBottom={20}>
-        
         <Paper className="activity-details-box" sx={{ ...paperStyle }}> 
           <TrainingData trainingData={trainingData || exampleTrainingData.map(data => ({
             ...data,
@@ -262,27 +206,27 @@ const Plan = () => {
           </DialogContent>
         </Dialog>
 
-        
         {Object.keys(trainingPlan).length > 0 && (
-    <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden', backgroundColor: 'orange' }}>
-      <SwipeableViews
-        index={currentIndex}
-        onChangeIndex={(index) => setCurrentIndex(index)}
-        enableMouseEvents
-      >
-        {Object.keys(trainingPlan).map((week) =>
-          trainingPlan[week].days.map((day, index) => (
-            <Box key={index} p={2} textAlign="center">
-              <Typography variant="h6">Day: {index + 1}</Typography>
-              <Typography>Activity: {day.activity}</Typography>
-              <Typography>Pace: {day.pace} per mile</Typography>
-              <img src={getImageUrlForActivity(day.activity)} alt="Activity" style={{ maxWidth: '100%', height: 'auto' }} />
-            </Box>
-          ))
+          <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden', backgroundColor: 'orange' }}>
+            <SwipeableViews
+              index={currentDayIndex}
+              onChangeIndex={(index) => setCurrentDayIndex(index)}
+              enableMouseEvents
+            >
+              {Object.keys(trainingPlan).map((week, weekIndex) =>
+                trainingPlan[week].days.map((day, dayIndex) => (
+                  <Box key={`${weekIndex}-${dayIndex}`} p={2} textAlign="center">
+                    <Typography variant="h6">Week: {weekIndex + 1} Day: {dayIndex + 1}</Typography>
+                    <Typography>Activity: {day.activity}</Typography>
+                    <Typography>Pace: {day.pace} per mile</Typography>
+                    <img src={getImageUrlForActivity(day.activity)} alt="Activity" style={{ maxWidth: '100%', height: 'auto' }} />
+                  </Box>
+                ))
+              )}
+            </SwipeableViews>
+          </Paper>
         )}
-      </SwipeableViews>
-    </Paper>
-  )}
+
         <Box mt={2} display="flex" flexDirection="column" alignItems="center" gap={2}>
           <Button
             variant="contained"
@@ -297,7 +241,7 @@ const Plan = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={getLatestActivity}
+            onClick={updateCurrentDay}
             disabled={loading}
             sx={addButtonStyle}
           >
