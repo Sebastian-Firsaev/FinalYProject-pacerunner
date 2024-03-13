@@ -207,25 +207,26 @@ const Plan = () => {
         </Dialog>
 
         {Object.keys(trainingPlan).length > 0 && (
-          <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden', backgroundColor: 'orange' }}>
-            <SwipeableViews
-              index={currentDayIndex}
-              onChangeIndex={(index) => setCurrentDayIndex(index)}
-              enableMouseEvents
-            >
-              {Object.keys(trainingPlan).map((week, weekIndex) =>
-                trainingPlan[week].days.map((day, dayIndex) => (
-                  <Box key={`${weekIndex}-${dayIndex}`} p={2} textAlign="center">
-                    <Typography variant="h6">Week: {weekIndex + 1} Day: {dayIndex + 1}</Typography>
-                    <Typography>Activity: {day.activity}</Typography>
-                    <Typography>Pace: {day.pace} per mile</Typography>
-                    <img src={getImageUrlForActivity(day.activity)} alt="Activity" style={{ maxWidth: '100%', height: 'auto' }} />
-                  </Box>
-                ))
-              )}
-            </SwipeableViews>
-          </Paper>
-        )}
+  <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden', backgroundColor: 'orange' }}>
+    <SwipeableViews
+      index={currentDayIndex}
+      onChangeIndex={(index) => setCurrentDayIndex(index)}
+      enableMouseEvents
+    >
+      {Object.keys(trainingPlan).map((week, weekIndex) =>
+        trainingPlan[week].days ? trainingPlan[week].days.map((day, dayIndex) => (
+          <Box key={`${weekIndex}-${dayIndex}`} p={2} textAlign="center">
+            <Typography variant="h6">Week: {weekIndex + 1} Day: {dayIndex + 1}</Typography>
+            <Typography>Activity: {day.activity}</Typography>
+            <Typography>Pace: {day.pace} per mile</Typography>
+            <img src={getImageUrlForActivity(day.activity)} alt="Activity" style={{ maxWidth: '100%', height: 'auto' }} />
+          </Box>
+        )) : null
+      )}
+    </SwipeableViews>
+  </Paper>
+)}
+
 
         <Box mt={2} display="flex" flexDirection="column" alignItems="center" gap={2}>
           <Button
