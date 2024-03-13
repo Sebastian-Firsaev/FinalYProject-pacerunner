@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Box, Typography, Button, Menu, MenuItem } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-
 const Header = ({ user, firstname, onMenuItemClick }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -22,7 +21,7 @@ const Header = ({ user, firstname, onMenuItemClick }) => {
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center">
       <Typography variant="h5" color="white" mb={2}>
-        Welcome, {firstname || user.displayName }!
+        Welcome, {firstname || user.displayName}!
       </Typography>
 
       <div>
@@ -39,6 +38,7 @@ const Header = ({ user, firstname, onMenuItemClick }) => {
           <MenuItem onClick={() => handleMenuItemClick('addRunnerDetails')}>Add Runner Details</MenuItem>
           <MenuItem onClick={() => handleMenuItemClick('startTrainingPlan')}>Start Training Plan</MenuItem>
           <MenuItem onClick={() => handleMenuItemClick('fetchAndSaveActivity')}>Fetch and Save Activity & Laps</MenuItem>
+          <MenuItem onClick={() => handleMenuItemClick('resetTrainingDay')}>Reset Training Day</MenuItem>
         </Menu>
       </div>
     </Box>
@@ -46,4 +46,5 @@ const Header = ({ user, firstname, onMenuItemClick }) => {
 };
 
 export default Header;
+
 

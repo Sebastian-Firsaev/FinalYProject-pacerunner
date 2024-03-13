@@ -6,10 +6,10 @@ import StravaApi from '../service/strava_api';
 import { useNavigate } from 'react-router-dom';
 import { getDatabase, ref, onValue, update } from 'firebase/database';
 import Header from '../components/header';
-import Footer from '../components/footer'; 
+import Footer from '../components/footer';
 import { exampleTrainingData, iconMapping } from '../constants/constant';
-import UserHealthForm from './UserHealthForm'; 
-import { generatePace } from '../utils/generatePace'; 
+import UserHealthForm from './UserHealthForm';
+import { generatePace } from '../utils/generatePace';
 import { paperStyle, addButtonStyle } from '../components/styles';
 import roadImage from '../constants/road.png';
 
@@ -42,7 +42,12 @@ const Plan = () => {
     setLoading(true);
     try {
       await getLatestActivity();
-      setCurrentDayIndex(currentDayIndex + 1);
+      const newDayIndex = currentDayIndex + 1;
+      setCurrentDayIndex(newDayIndex);
+      // Save the updated index to Firebase
+      const userId = localStorage.getItem("userId");
+      const userRef = ref(getDatabase(), `users/${userId}`);
+      await update(userRef, { currentDayIndex: newDayIndex });
     } finally {
       setLoading(false);
     }
@@ -72,7 +77,24 @@ const Plan = () => {
       setLoading(false);
     }
   };
-
+  const resetTrainingDay = async () => {
+    setLoading(true);
+    try {
+      // Reset the current day index to 0
+      setCurrentDayIndex(0);
+  
+      // Update the currentDayIndex in Firebase
+      const userId = localStorage.getItem("userId");
+      const userRef = ref(getDatabase(), `users/${userId}`);
+      await update(userRef, { currentDayIndex: 0 });
+  
+      console.log("Training plan has been reset to day 1.");
+    } catch (error) {
+      console.error("Error resetting the training day:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   const fetchActivityAndLaps = async () => {
     setLoading(true);
     try {
@@ -131,10 +153,14 @@ const Plan = () => {
       case 'fetchAndSaveActivity':
         fetchActivityAndLaps();
         break;
+      case 'resetTrainingDay':
+        resetTrainingDay();
+        break;
       default:
         console.log("Unhandled action:", action);
     }
   };
+  
 
   useEffect(() => {
     if (!storedCode) {
@@ -153,6 +179,10 @@ const Plan = () => {
       setTrainingPlan(userData?.trainingPlan || {});
       const firstname = userData?.stravaData?.firstname;
       setUser({ ...storedUser.providerData[0], firstname });
+
+      // Initialize the currentDayIndex from Firebase
+      const storedDayIndex = userData?.currentDayIndex || 0;
+      setCurrentDayIndex(storedDayIndex);
 
       if (userData?.healthInfo?.age && userData?.healthInfo?.restingHeartRate) {
         const pace = generatePace(userData.healthInfo.age, userData.healthInfo.restingHeartRate);
@@ -176,7 +206,7 @@ const Plan = () => {
       <Footer />
 
       <Box display="flex" flexDirection="column" alignItems="center" marginBottom={20}>
-        <Paper className="activity-details-box" sx={{ ...paperStyle }}> 
+        <Paper className="activity-details-box" sx={{ ...paperStyle }}>
           <TrainingData trainingData={trainingData || exampleTrainingData.map(data => ({
             ...data,
             icon: iconMapping[data.label],
@@ -184,7 +214,7 @@ const Plan = () => {
         </Paper>
 
         {recommendedPace && (
-          <Paper className="recommended-pace-box" sx={{ ...paperStyle }}> 
+          <Paper className="recommended-pace-box" sx={{ ...paperStyle }}>
             <Typography variant="h5">
               Your Standard Pace: {recommendedPace} per mile
             </Typography>
@@ -207,26 +237,25 @@ const Plan = () => {
         </Dialog>
 
         {Object.keys(trainingPlan).length > 0 && (
-  <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden', backgroundColor: 'orange' }}>
-    <SwipeableViews
-      index={currentDayIndex}
-      onChangeIndex={(index) => setCurrentDayIndex(index)}
-      enableMouseEvents
-    >
-      {Object.keys(trainingPlan).map((week, weekIndex) =>
-        trainingPlan[week].days ? trainingPlan[week].days.map((day, dayIndex) => (
-          <Box key={`${weekIndex}-${dayIndex}`} p={2} textAlign="center">
-            <Typography variant="h6">Week: {weekIndex + 1} Day: {dayIndex + 1}</Typography>
-            <Typography>Activity: {day.activity}</Typography>
-            <Typography>Pace: {day.pace} per mile</Typography>
-            <img src={getImageUrlForActivity(day.activity)} alt="Activity" style={{ maxWidth: '100%', height: 'auto' }} />
-          </Box>
-        )) : null
-      )}
-    </SwipeableViews>
-  </Paper>
-)}
-
+          <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden', backgroundColor: 'orange' }}>
+            <SwipeableViews
+              index={currentDayIndex}
+              onChangeIndex={(index) => setCurrentDayIndex(index)}
+              enableMouseEvents
+            >
+              {Object.keys(trainingPlan).map((week, weekIndex) =>
+                trainingPlan[week].days ? trainingPlan[week].days.map((day, dayIndex) => (
+                  <Box key={`${weekIndex}-${dayIndex}`} p={2} textAlign="center">
+                    <Typography variant="h6">Week: {weekIndex + 1} Day: {dayIndex + 1}</Typography>
+                    <Typography>Activity: {day.activity}</Typography>
+                    <Typography>Pace: {day.pace} per mile</Typography>
+                    <img src={getImageUrlForActivity(day.activity)} alt="Activity" style={{ maxWidth: '100%', height: 'auto' }} />
+                  </Box>
+                )) : null
+              )}
+            </SwipeableViews>
+          </Paper>
+        )}
 
         <Box mt={2} display="flex" flexDirection="column" alignItems="center" gap={2}>
           <Button
