@@ -103,6 +103,18 @@ const Plan = () => {
       const latestActivity = await StravaApi.getLatestActivity(id, accessToken);
       if (latestActivity) {
         const lapsData = await StravaApi.getActivityLaps(latestActivity.id, accessToken);
+        
+        // change lapsData array into object with indices keys
+        const lapsDataObject = lapsData.reduce((obj, lap, index) => {
+          obj[index] = lap;
+          return obj;
+        }, {});
+  
+      
+        const db = getDatabase();
+        const lapsDataRef = ref(db, `users/${id}/activities/${latestActivity.id}/laps`);
+        await update(lapsDataRef, lapsDataObject);
+  
         console.log("Laps data added to DB:", lapsData);
       }
     } catch (error) {
@@ -111,6 +123,7 @@ const Plan = () => {
       setLoading(false);
     }
   };
+  
 
   const getImageUrlForActivity = (activityDescription) => {
     return roadImage;

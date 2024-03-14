@@ -82,6 +82,8 @@ const StravaApi = {
       throw error;
     }
   }
+
+  
 };
 
 export default StravaApi;
