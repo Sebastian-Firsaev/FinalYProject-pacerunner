@@ -12,6 +12,7 @@ import UserHealthForm from './UserHealthForm';
 import { generatePace } from '../utils/generatePace';
 import { paperStyle, addButtonStyle } from '../components/styles';
 import roadImage from '../constants/road.png';
+import getPaceRecommendations from '../utils/PaceRecommendation';
 
 const Plan = () => {
   const storedCode = localStorage.getItem('code');
@@ -24,6 +25,10 @@ const Plan = () => {
   const [recommendedPace, setRecommendedPace] = useState('');
   const [recommendedPaceNextRun, setRecommendedPaceNextRun] = useState('');
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
+  const [paceRecommendations, setPaceRecommendations] = useState(null);
+  const [startingPace, setStartingPace] = useState('');
+  const [corePace, setCorePace] = useState('');
+  const [finishingPace, setFinishingPace] = useState('');
 
   const fetchLastData = async () => {
     setLoading(true);
@@ -38,6 +43,36 @@ const Plan = () => {
     }
   };
 
+  const fetchPaceRecommendations = async () => {
+    setLoading(true);
+    try {
+      const userId = localStorage.getItem("userId");
+      const db = getDatabase();
+      const activitiesRef = ref(db, `users/${userId}/activities`);
+  
+      onValue(activitiesRef, async (snapshot) => {
+        const activities = snapshot.val();
+        const activityId = Object.keys(activities)[1];
+        if (!activityId) {
+          throw new Error("No activity ID found");
+        }
+        
+        const paceRecommendations = await getPaceRecommendations(userId, activityId);
+        
+        // Set paces
+        setStartingPace(paceRecommendations.startingPace);
+        setCorePace(paceRecommendations.corePace);
+        setFinishingPace(paceRecommendations.finishingPace);
+      }, {
+        onlyOnce: true
+      });
+    } catch (error) {
+      console.error("Failed to fetch pace recommendations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const updateCurrentDay = async () => {
     setLoading(true);
     try {
@@ -241,7 +276,20 @@ const Plan = () => {
             </Typography>
           </Paper>
         )}
-
+        
+        {startingPace && corePace && finishingPace && (
+        <Paper className="pace-recommendations-box" sx={{ ...paperStyle }}>
+          <Typography variant="h5">
+            Starting Pace: {startingPace} per mile
+          </Typography>
+          <Typography variant="h5">
+            Core Pace: {corePace} per mile
+          </Typography>
+          <Typography variant="h5">
+            Finishing Pace: {finishingPace} per mile
+          </Typography>
+        </Paper>
+      )}
         <Dialog open={openDialog} onClose={handleCloseDialog}>
           <DialogTitle>Add Runner Details</DialogTitle>
           <DialogContent>
@@ -290,6 +338,16 @@ const Plan = () => {
           >
             {loading ? <CircularProgress size={24} /> : 'Update Last Run'}
           </Button>
+          <Button
+  variant="contained"
+  color="primary"
+  onClick={fetchPaceRecommendations}
+  disabled={loading}
+  sx={addButtonStyle}
+>
+  {loading ? <CircularProgress size={24} /> : 'Get Pace Recommendations'}
+</Button>
+
         </Box>
       </Box>
     </>
