@@ -5,6 +5,12 @@ import { trainingPlan } from '../constants/constant';
 
 const STRAVA_API_BASE_URL = 'https://www.strava.com/api/v3';
 
+const getUnixTimeWeeksAgo = (weeks) => {
+  const currentDate = new Date();
+  currentDate.setDate(currentDate.getDate() - weeks * 7); // Subtract 'n' weeks
+  return Math.floor(currentDate.getTime() / 1000); // Convert to Unix timestamp
+};
+
 const StravaApi = {
   exchangeAuthorizationCode: async (clientId, clientSecret, code) => {
     try {
@@ -39,7 +45,9 @@ const StravaApi = {
     let allActivities = [];
     let page = 1;
     const perPage = 30; // how many activities to fetch per request
-  
+    const fourWeeksAgo = getUnixTimeWeeksAgo(4);
+    const now = Math.floor(Date.now() / 1000);
+
     try {
       while (true) {
         const response = await axios.get(`${STRAVA_API_BASE_URL}/athlete/activities`, {
@@ -49,16 +57,18 @@ const StravaApi = {
           params: {
             page: page,
             per_page: perPage,
+            after: fourWeeksAgo, // Fetch activities after this timestamp
+            before: now, // Fetch activities before this timestamp (now)
           },
         });
-  
+
         if (response.data.length === 0) {
           break; 
         }
-  
+
         allActivities = allActivities.concat(response.data);
         page += 1;
-  
+
         if (response.data.length < perPage) {
           break; 
         }

@@ -13,6 +13,7 @@ import { generatePace } from '../utils/generatePace';
 import { paperStyle, addButtonStyle } from '../components/styles';
 import roadImage from '../constants/road.png';
 import getPaceRecommendations from '../utils/PaceRecommendation';
+import calculateOverallPace from '../utils/calculateAndSaveRecommendedPaces';
 
 const Plan = () => {
   const storedCode = localStorage.getItem('code');
@@ -360,6 +361,15 @@ const Plan = () => {
   sx={addButtonStyle}
 >
   {loading ? <CircularProgress size={24} /> : 'Get Pace Recommendations'}
+</Button>
+<Button
+  variant="contained"
+  color="primary"
+  onClick={() => calculateOverallPace(localStorage.getItem("userId"))}
+  disabled={loading}
+  sx={addButtonStyle}
+>
+  {loading ? <CircularProgress size={24} /> : 'Calculate Overall Pace'}
 </Button>
 
         </Box>

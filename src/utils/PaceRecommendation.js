@@ -1,6 +1,5 @@
 import { getDatabase, ref, set, onValue } from 'firebase/database';
 
-
 const average = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
 const median = (arr) => {
   const sorted = arr.slice().sort((a, b) => a - b);
@@ -33,11 +32,14 @@ const getPaceRecommendations = async (userId, activityId) => {
         return;
       }
 
-      // Calculate pace per lap using moving time and distance, 
+      // Calculate pace per lap using moving time and distance
       const pacePerLap = laps.map(lap => calculatePacePerLap(lap.moving_time, lap.distance));
 
+      // Exclude the first 3 and last 3 laps for the corePace calculation
+      const lapsForCorePace = pacePerLap.slice(3, -3);
+      const corePace = lapsForCorePace.length > 0 ? median(lapsForCorePace) : median(pacePerLap); // Use median of all if exclusion results in empty
+
       const startingPace = average(pacePerLap.slice(0, 3)) * 1.01;
-      const corePace = median(pacePerLap);
       const finishingPace = average(pacePerLap.slice(-3)) * 0.99;
 
       const paceRecommendations = {
@@ -65,4 +67,3 @@ const savePaceRecommendations = async (userId, activityId, paceRecommendations) 
 };
 
 export default getPaceRecommendations;
-
