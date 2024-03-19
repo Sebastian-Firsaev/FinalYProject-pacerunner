@@ -35,6 +35,40 @@ const StravaApi = {
       localStorage.removeItem("code");
     }
   },
+  getAllActivities: async (accessToken) => {
+    let allActivities = [];
+    let page = 1;
+    const perPage = 30; // how many activities to fetch per request
+  
+    try {
+      while (true) {
+        const response = await axios.get(`${STRAVA_API_BASE_URL}/athlete/activities`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          params: {
+            page: page,
+            per_page: perPage,
+          },
+        });
+  
+        if (response.data.length === 0) {
+          break; 
+        }
+  
+        allActivities = allActivities.concat(response.data);
+        page += 1;
+  
+        if (response.data.length < perPage) {
+          break; 
+        }
+      }
+      return allActivities;
+    } catch (error) {
+      console.error('Error fetching all Strava activities:', error);
+      throw error;
+    }
+  },
   
    getLatestActivity : async (id, accessToken) => {
     try {

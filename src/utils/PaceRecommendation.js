@@ -36,9 +36,9 @@ const getPaceRecommendations = async (userId, activityId) => {
       // Calculate pace per lap using moving time and distance, 
       const pacePerLap = laps.map(lap => calculatePacePerLap(lap.moving_time, lap.distance));
 
-      const startingPace = average(pacePerLap.slice(0, 2)) * 1.01;
+      const startingPace = average(pacePerLap.slice(0, 3)) * 1.01;
       const corePace = median(pacePerLap);
-      const finishingPace = average(pacePerLap.slice(-2)) * 0.99;
+      const finishingPace = average(pacePerLap.slice(-3)) * 0.99;
 
       const paceRecommendations = {
         startingPace: formatPace(startingPace),

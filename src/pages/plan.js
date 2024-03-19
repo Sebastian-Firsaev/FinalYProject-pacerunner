@@ -44,34 +44,46 @@ const Plan = () => {
   };
 
   const fetchPaceRecommendations = async () => {
-    setLoading(true);
-    try {
-      const userId = localStorage.getItem("userId");
-      const db = getDatabase();
-      const activitiesRef = ref(db, `users/${userId}/activities`);
-  
-      onValue(activitiesRef, async (snapshot) => {
-        const activities = snapshot.val();
-        const activityId = Object.keys(activities)[1];
-        if (!activityId) {
-          throw new Error("No activity ID found");
-        }
-        
-        const paceRecommendations = await getPaceRecommendations(userId, activityId);
-        
-        // Set paces
-        setStartingPace(paceRecommendations.startingPace);
-        setCorePace(paceRecommendations.corePace);
-        setFinishingPace(paceRecommendations.finishingPace);
-      }, {
-        onlyOnce: true
-      });
-    } catch (error) {
-      console.error("Failed to fetch pace recommendations:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(true);
+      try {
+        const userId = localStorage.getItem("userId");
+        const db = getDatabase();
+        const activitiesRef = ref(db, `users/${userId}/activities`);
+    
+        onValue(activitiesRef, async (snapshot) => {
+          const activities = snapshot.val();
+          if (!activities) {
+            throw new Error("No activities found");
+          }
+    
+          // Extract all activity IDs
+          const activityIds = Object.keys(activities);
+    
+          // Check for any activity IDs
+          if (activityIds.length === 0) {
+            throw new Error("No activity IDs found");
+          }
+    
+          // Generate pace recommendations for each activity
+          const paceRecommendationsPromises = activityIds.map(activityId => getPaceRecommendations(userId, activityId));
+    
+          // Wait 
+          const allPaceRecommendations = await Promise.all(paceRecommendationsPromises);
+
+          const { startingPace, corePace, finishingPace } = allPaceRecommendations[allPaceRecommendations.length - 1];
+          // Set paces from the last activity
+          setStartingPace(startingPace);
+          setCorePace(corePace);
+          setFinishingPace(finishingPace);
+    
+        }, { onlyOnce: true });
+      } catch (error) {
+        console.error("Failed to fetch pace recommendations:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
   
   const updateCurrentDay = async () => {
     setLoading(true);
@@ -131,33 +143,35 @@ const Plan = () => {
     }
   };
   const fetchActivityAndLaps = async () => {
-    setLoading(true);
-    try {
-      const id = localStorage.getItem("userId");
-      const accessToken = localStorage.getItem("accessToken");
-      const latestActivity = await StravaApi.getLatestActivity(id, accessToken);
-      if (latestActivity) {
-        const lapsData = await StravaApi.getActivityLaps(latestActivity.id, accessToken);
-        
-        // change lapsData array into object with indices keys
-        const lapsDataObject = lapsData.reduce((obj, lap, index) => {
-          obj[index] = lap;
-          return obj;
-        }, {});
-  
-      
-        const db = getDatabase();
-        const lapsDataRef = ref(db, `users/${id}/activities/${latestActivity.id}/laps`);
-        await update(lapsDataRef, lapsDataObject);
-  
-        console.log("Laps data added to DB:", lapsData);
+      setLoading(true); 
+      try {
+        const accessToken = localStorage.getItem("accessToken");
+        const userId = localStorage.getItem("userId");
+        const activities = await StravaApi.getAllActivities(accessToken);
+    
+        for (const activity of activities) {
+          const lapsData = await StravaApi.getActivityLaps(activity.id, accessToken);
+          if (lapsData && lapsData.length > 0) {
+            // Convert lapsData array into an object with indices keys
+            const lapsDataObject = lapsData.reduce((obj, lap, index) => {
+              obj[index] = lap;
+              return obj;
+            }, {});
+    
+            // Save each activity's laps data in Firebase
+            const db = getDatabase();
+            const lapsDataRef = ref(db, `users/${userId}/activities/${activity.id}/laps`);
+            await update(lapsDataRef, lapsDataObject);
+    
+            console.log(`Laps data added to DB for activity ${activity.id}:`, lapsData);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching activities and laps:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching activity and laps:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
   
 
   const getImageUrlForActivity = (activityDescription) => {
