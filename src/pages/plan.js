@@ -10,11 +10,12 @@ import Footer from '../components/footer';
 import { exampleTrainingData, iconMapping } from '../constants/constant';
 import UserHealthForm from './UserHealthForm';
 import { generatePace } from '../utils/generatePace';
+import compareAndStoreNextRunPaces from '../utils/nextPace';
 import { paperStyle, addButtonStyle } from '../components/styles';
 import roadImage from '../constants/road.png';
 import getPaceRecommendations from '../utils/PaceRecommendation';
 import calculateOverallPace from '../utils/calculateAndSaveRecommendedPaces';
-
+import getactivityRecommendations from '../utils/getactivityRecommendations';
 const Plan = () => {
   const storedCode = localStorage.getItem('code');
   const [loading, setLoading] = useState(false);
@@ -30,6 +31,7 @@ const Plan = () => {
   const [startingPace, setStartingPace] = useState('');
   const [corePace, setCorePace] = useState('');
   const [finishingPace, setFinishingPace] = useState('');
+  const [averagePaces, setAveragePaces] = useState({ startingPace: '', corePace: '', finishingPace: '' });
 
   const fetchLastData = async () => {
     setLoading(true);
@@ -43,6 +45,31 @@ const Plan = () => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      navigate('/');
+      return;
+    }
+
+    const fetchAveragePaces = async () => {
+      const db = getDatabase();
+      const averagePacesRef = ref(db, `users/${userId}/AveragePaces`);
+
+      onValue(averagePacesRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          setAveragePaces({
+            startingPace: data.averageStartingPace || '',
+            corePace: data.averageCorePace || '',
+            finishingPace: data.averageFinishingPace || '',
+          });
+        }
+      }, { onlyOnce: true });
+    };
+
+    fetchAveragePaces();
+  }, [navigate]);
 
   const fetchPaceRecommendations = async () => {
       setLoading(true);
@@ -84,12 +111,56 @@ const Plan = () => {
         setLoading(false);
       }
     };
-    
+    const handleTriggerButtonClick = async () => {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+          console.error('User ID not found');
+          return;
+      }
+      try {
+          setLoading(true); // Assuming you have a setLoading state to show a loading indicator
+          await compareAndStoreNextRunPaces(userId);
+          console.log('Next run paces have been successfully compared and stored.');
+      } catch (error) {
+          console.error('Failed to compare and store next run paces:', error);
+      } finally {
+          setLoading(false);
+      }
+  };
   
+    const fetchLatestAcPace = async () => {
+      setLoading(true);
+      try {
+        const userId = localStorage.getItem("userId");
+        const db = getDatabase();
+        const activityRef = ref(db, `users/${userId}/activity`);
+  
+        onValue(activityRef, async (snapshot) => {
+          const activity = snapshot.val();
+          if (!activity) {
+            throw new Error("No activity found");
+          }
+  
+         
+          const { startingPace, corePace, finishingPace } = await getactivityRecommendations(userId);
+  
+          // Set paces from the activity
+          setStartingPace(startingPace);
+          setCorePace(corePace);
+          setFinishingPace(finishingPace);
+  
+        }, { onlyOnce: true });
+      } catch (error) {
+        console.error("Failed to fetch pace recommendations:", error);
+      } finally {
+        setLoading(false);
+      }
+  };
   const updateCurrentDay = async () => {
     setLoading(true);
     try {
-      await getLatestActivity();
+      await getLatestActivity(); 
+      await fetchLatestAcPace();
       const newDayIndex = currentDayIndex + 1;
       setCurrentDayIndex(newDayIndex);
       // Save the updated index to Firebase
@@ -265,25 +336,27 @@ const Plan = () => {
           <Header user={user} firstname={user.firstname} onMenuItemClick={handleHeaderMenuAction} />
         </Paper>
       )}
-
+  
       <Footer />
-
+  
       <Box display="flex" flexDirection="column" alignItems="center" marginBottom={20}>
-        <Paper className="activity-details-box" sx={{ ...paperStyle }}>
-          <TrainingData trainingData={trainingData || exampleTrainingData.map(data => ({
-            ...data,
-            icon: iconMapping[data.label],
-          }))} />
-        </Paper>
-
-        {recommendedPace && (
-          <Paper className="recommended-pace-box" sx={{ ...paperStyle }}>
+        {averagePaces.startingPace && averagePaces.corePace && averagePaces.finishingPace && (
+          <Paper className="average-paces-box" sx={{ ...paperStyle }}>
             <Typography variant="h5">
-              Your Standard Pace: {recommendedPace} per mile
+              Your Standard Pace:
+            </Typography>
+            <Typography>
+              Starting Pace: {averagePaces.startingPace}
+            </Typography>
+            <Typography>
+              Core Pace: {averagePaces.corePace}
+            </Typography>
+            <Typography>
+              Finishing Pace: {averagePaces.finishingPace}
             </Typography>
           </Paper>
         )}
-
+  
         {recommendedPaceNextRun && (
           <Paper className="recommended-pace-next-run-box" sx={{ ...paperStyle }}>
             <Typography variant="h5">
@@ -293,25 +366,26 @@ const Plan = () => {
         )}
         
         {startingPace && corePace && finishingPace && (
-        <Paper className="pace-recommendations-box" sx={{ ...paperStyle }}>
-          <Typography variant="h5">
-            Starting Pace: {startingPace} per mile
-          </Typography>
-          <Typography variant="h5">
-            Core Pace: {corePace} per mile
-          </Typography>
-          <Typography variant="h5">
-            Finishing Pace: {finishingPace} per mile
-          </Typography>
-        </Paper>
-      )}
+          <Paper className="pace-recommendations-box" sx={{ ...paperStyle }}>
+            <Typography variant="h5">
+              Starting Pace: {startingPace} per mile
+            </Typography>
+            <Typography variant="h5">
+              Core Pace: {corePace} per mile
+            </Typography>
+            <Typography variant="h5">
+              Finishing Pace: {finishingPace} per mile
+            </Typography>
+          </Paper>
+        )}
+        
         <Dialog open={openDialog} onClose={handleCloseDialog}>
           <DialogTitle>Add Runner Details</DialogTitle>
           <DialogContent>
             <UserHealthForm />
           </DialogContent>
         </Dialog>
-
+  
         {Object.keys(trainingPlan).length > 0 && (
           <Paper elevation={3} sx={{ ...paperStyle, width: '100%', overflow: 'hidden', backgroundColor: 'orange' }}>
             <SwipeableViews
@@ -332,7 +406,7 @@ const Plan = () => {
             </SwipeableViews>
           </Paper>
         )}
-
+  
         <Box mt={2} display="flex" flexDirection="column" alignItems="center" gap={2}>
           <Button
             variant="contained"
@@ -343,7 +417,7 @@ const Plan = () => {
           >
             {loading ? <CircularProgress size={24} /> : 'Upload Run from Strava'}
           </Button>
-
+  
           <Button
             variant="contained"
             color="primary"
@@ -354,28 +428,31 @@ const Plan = () => {
             {loading ? <CircularProgress size={24} /> : 'Update Last Run'}
           </Button>
           <Button
-  variant="contained"
-  color="primary"
-  onClick={fetchPaceRecommendations}
-  disabled={loading}
-  sx={addButtonStyle}
->
-  {loading ? <CircularProgress size={24} /> : 'Get Pace Recommendations'}
+            variant="contained"
+            color="primary"
+            onClick={fetchPaceRecommendations}
+            disabled={loading}
+            sx={addButtonStyle}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Get Pace Recommendations'}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => calculateOverallPace(localStorage.getItem("userId"))}
+            disabled={loading}
+            sx={addButtonStyle}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Calculate Overall Pace'}
+          </Button>
+          <Button variant="contained" color="primary" onClick={handleTriggerButtonClick} disabled={loading}>
+    {loading ? <CircularProgress size={24} /> : 'Trigger Comparison and Storage'}
 </Button>
-<Button
-  variant="contained"
-  color="primary"
-  onClick={() => calculateOverallPace(localStorage.getItem("userId"))}
-  disabled={loading}
-  sx={addButtonStyle}
->
-  {loading ? <CircularProgress size={24} /> : 'Calculate Overall Pace'}
-</Button>
-
         </Box>
       </Box>
     </>
   );
+  
 };
 
 export default Plan;

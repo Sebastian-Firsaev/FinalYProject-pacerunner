@@ -18,7 +18,7 @@ const TrainingPlan = {
     try {
       const db = getDatabase();
       const userRef = ref(db, `users/${userId}/activity`);
-      await set(userRef, stravaData);
+      await set(userRef, stravaData); // stravaData now includes both activity details and laps
       SuccessToast("Activity info has been updated successfully!");
     } catch (error) {
       console.log(error);
