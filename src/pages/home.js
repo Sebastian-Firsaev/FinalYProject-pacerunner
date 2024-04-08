@@ -15,6 +15,7 @@ const Home = () => {
     const auth = getAuth();
     const storedUser = JSON.parse(localStorage.getItem('user'));
     const storedCode = localStorage.getItem('code');
+    const userId = localStorage.getItem("userId");
 
     if(storedCode) {
       navigate('/plan');

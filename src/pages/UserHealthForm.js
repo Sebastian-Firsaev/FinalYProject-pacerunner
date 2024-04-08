@@ -29,11 +29,13 @@ const UserHealthForm = () => {
       display="flex"
       justifyContent="center"
       alignItems="center"
-      height="100vh"
+      height="100%"
+      width="100%"
+      padding="16px"
     >
-      <Paper elevation={3} sx={{ padding: '16px', width: '50%', backgroundColor: 'orange' }}>
+      <Paper elevation={3} sx={{ width: '100%', height: '100%', padding: '16px' }}>
         <Box textAlign="center">
-          <Typography variant="h5" color="white" gutterBottom>
+          <Typography variant="h5" gutterBottom>
             Enter Your Health Details
           </Typography>
           <TextField

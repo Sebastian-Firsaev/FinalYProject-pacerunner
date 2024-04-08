@@ -19,9 +19,7 @@ body {
 
 .App-footer {
   background-color: orange;
-  padding: 10px;
-  position: fixed;
-  bottom: 0;
+  padding: 20px 0;
   width: 100%;
   color: white;
 }
