@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/static/css/main.ab6f77d5.css",
-    "main.js": "/static/js/main.3500b507.js",
-    "static/js/787.2874c462.chunk.js": "/static/js/787.2874c462.chunk.js",
-    "static/media/road.png": "/static/media/road.fb2fd268cbe3e5316c72.png",
-    "index.html": "/index.html",
-    "main.ab6f77d5.css.map": "/static/css/main.ab6f77d5.css.map",
-    "main.3500b507.js.map": "/static/js/main.3500b507.js.map",
-    "787.2874c462.chunk.js.map": "/static/js/787.2874c462.chunk.js.map"
+    "main.css": "/FinalYProject-pacerunner/static/css/main.ab6f77d5.css",
+    "main.js": "/FinalYProject-pacerunner/static/js/main.2787c664.js",
+    "static/js/787.2874c462.chunk.js": "/FinalYProject-pacerunner/static/js/787.2874c462.chunk.js",
+    "static/media/road.png": "/FinalYProject-pacerunner/static/media/road.fb2fd268cbe3e5316c72.png",
+    "index.html": "/FinalYProject-pacerunner/index.html",
+    "main.ab6f77d5.css.map": "/FinalYProject-pacerunner/static/css/main.ab6f77d5.css.map",
+    "main.2787c664.js.map": "/FinalYProject-pacerunner/static/js/main.2787c664.js.map",
+    "787.2874c462.chunk.js.map": "/FinalYProject-pacerunner/static/js/787.2874c462.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.ab6f77d5.css",
-    "static/js/main.3500b507.js"
+    "static/js/main.2787c664.js"
   ]
 }
