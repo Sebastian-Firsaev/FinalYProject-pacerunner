@@ -62,7 +62,9 @@
     },
     "react-swipeable-views": {
       "react": "^18.2.0"
+    },
+    "reactfire": {
+      "firebase": "^10.11.0"
     }
   }
 }
-
