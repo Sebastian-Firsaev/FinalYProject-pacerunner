@@ -1,11 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "*.html", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/static/(.*)", "dest": "/static/$1" }
-  ],
   "headers": [
     {
       "source": "/static/css/(.*)",
@@ -16,6 +9,11 @@
         }
       ]
     }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    }
   ]
 }
-ox version","last 1 safari version"]},"devDependencies":{"gh-pages":"^6.1.1"}}
