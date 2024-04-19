@@ -28,6 +28,9 @@ const Login = () => {
       justifyContent="center"
       alignItems="center"
       height="100vh"
+      sx={{
+        backgroundImage: 'linear-gradient(120deg, #89f7fe 0%, #66a6ff 100%)'
+      }}
     >
       <Paper elevation={3} sx={{ padding: '16px', width: '50%', backgroundColor: 'orange' }}>
         <Box textAlign="center">

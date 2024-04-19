@@ -40,30 +40,34 @@ const DataInfo = ({
     backgroundColor: 'orange',
     color: 'white',
     borderRadius: '20px',
-    // Updated boxShadow for a more 3D look
+   
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(0, 0, 0, 0.19)',
     textAlign: 'center',
     transition: 'transform 0.3s ease-in-out, boxShadow 0.3s ease-in-out',
-    // Hover styles
+  
     ':hover': {
-      boxShadow: '0 8px 16px rgba(0, 0, 0, 0.3), 0 12px 24px rgba(0, 0, 0, 0.25)', // More pronounced shadow on hover
-      transform: 'translateY(-4px) scale(1.02)', // Slightly lift and scale the box
+      boxShadow: '0 8px 16px rgba(0, 0, 0, 0.3), 0 12px 24px rgba(0, 0, 0, 0.25)', 
+      transform: 'translateY(-4px) scale(1.02)', 
     },
   };
   const StyledDialogTitle = styled(DialogTitle)({
-    backgroundColor: '#3f51b5', // A nice shade of blue
+    backgroundColor: '#3f51b5', 
     color: 'white',
     padding: '20px',
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(0, 0, 0, 0.19)',
     textAlign: 'center'
   });
   const digitalTextStyle = {
-    fontFamily: '"Lucida Console", "Monaco", monospace', // Digital-looking font
-    textShadow: '0 0 5px #FFA500', // Orange glow effect
+    fontFamily: '"Lucida Console", "Monaco", monospace', 
+    textShadow: '0 0 5px #FFA500', 
   };
+  const StyledDialogContent = styled(DialogContent)(({ theme }) => ({
+    backgroundColor: 'orange', 
+    padding: theme.spacing(2), 
+  }));
 
   return (
-    <Box display="flex" flexDirection="column" alignItems="center" marginBottom={2} width="100%">
+    <Box display="flex" flexDirection="column" alignItems="center" marginBottom={2} width="100%" >
       <Paper className="average-paces-box" sx={{ ...paperStyle }} onClick={() => setShowPaceDetails(!showPaceDetails)}>
       <Typography variant="h4" sx={{ ...digitalTextStyle, cursor: 'pointer' }}>
       Your Standard Pace
@@ -123,12 +127,23 @@ const DataInfo = ({
       <Paper elevation={3} sx={{ ...paperStyle, marginTop: 'auto' }}> 
           <Typography variant="h6" sx={{ ...digitalTextStyle }}>{randomQuote}</Typography>
         </Paper>
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Add Runner Details</DialogTitle>
-        <DialogContent>
-          <UserHealthForm />
-        </DialogContent>
-      </Dialog>
+        <Dialog
+      open={openDialog}
+      onClose={handleCloseDialog}
+      PaperProps={{
+        style: {
+          backgroundColor: 'transparent', 
+          boxShadow: 'none',
+        }
+      }}
+    >
+      <StyledDialogTitle>
+        <Typography variant="h6" component="div" style={{ color: 'white' }}>Add Runner Details</Typography>
+      </StyledDialogTitle>
+      <StyledDialogContent>
+        <UserHealthForm />
+      </StyledDialogContent>
+    </Dialog>
 
       <Dialog open={openTrainingDialog} onClose={onCloseTrainingDialog} >
       <StyledDialogTitle>Training Calendar</StyledDialogTitle>

@@ -59,19 +59,27 @@ const Home = () => {
   }
 
   return (
-    user && (<Box>
-      <Paper elevation={3} sx={{ padding: '16px', marginBottom: '20px', backgroundColor: 'orange' }}>
-        <Header user={user}/>
-      </Paper>
+    <Box
+      sx={{
+        backgroundImage: 'linear-gradient(120deg, #89f7fe 0%, #66a6ff 100%)'
+      }}
+    >
+      {user && (
+        <Box>
+          <Paper elevation={3} sx={{ padding: '16px', marginBottom: '20px', backgroundColor: 'orange' }}>
+            <Header user={user} />
+          </Paper>
 
-      {authenticated && (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-          <Box mt={4}>
-            <StravaConnect />
-          </Box>
+          {authenticated && (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+              <Box mt={4}>
+                <StravaConnect />
+              </Box>
+            </Box>
+          )}
         </Box>
       )}
-    </Box>)
+    </Box>
   );
 };
 
