@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@mui/material';
+import stravalogo from '../constants/strava_logo.png';
 
 const StravaConnect = () => {
   const handleStravaConnect = () => {
@@ -11,12 +12,10 @@ const StravaConnect = () => {
 
   return (
     <Button variant="contained" color="primary" onClick={handleStravaConnect} className="connect-to-strava-button">
-      <img src="strava_logo.png" alt="Strava Logo" />
+      <img src={stravalogo} alt="Strava Logo" style={{ marginRight: 8 }} />
       Connect to Strava
     </Button>
   );
-  
-  
 };
 
 export default StravaConnect;

@@ -1,25 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, CircularProgress, Paper, Dialog, DialogTitle, DialogContent, Typography } from '@mui/material';
-import TrainingData from '../components/training_data';
-import SwipeableViews from 'react-swipeable-views';
 import StravaApi from '../service/strava_api';
 import { useNavigate } from 'react-router-dom';
-import { getDatabase, ref, onValue, update } from 'firebase/database';
+import { getDatabase, ref, onValue, update, set, get} from 'firebase/database';
 import Header from '../components/header';
 import Footer from '../components/footer';
-import { exampleTrainingData, iconMapping } from '../constants/constant';
-import UserHealthForm from './UserHealthForm';
 import { generatePace } from '../utils/generatePace';
 import compareAndStoreNextRunPaces from '../utils/nextPace';
-import { paperStyle, addButtonStyle } from '../components/styles';
-import roadImage from '../constants/road.png';
 import getPaceRecommendations from '../utils/PaceRecommendation';
 import calculateOverallPace from '../utils/calculateAndSaveRecommendedPaces';
 import getactivityRecommendations from '../utils/getactivityRecommendations';
 import ErrorToast from '../components/error_toast';
-import TrainingCalendar from '../components/training_plan';
-import HoverableButtons from '../components/hoverable_buttons';
 import DataInfo from '../components/data_info';
+import {quotes} from '../constants/constant';
+import roadImage from '../constants/road.png';
+import longroad from '../constants/longroad.png';
+import restroad from '../constants/restroad.png';
+import temporoad from '../constants/temporaod.png';
+import crossroad from '../constants/crossroad.png';
+import runrun from '../constants/runrun.png';
 
 const Plan = () => {
   const storedCode = localStorage.getItem('code');
@@ -38,7 +37,8 @@ const Plan = () => {
   const [finishingPace, setFinishingPace] = useState('');
   const [averagePaces, setAveragePaces] = useState({ startingPace: '', corePace: '', finishingPace: '' });
   const [nextRunPaces, setNextRunPaces] = useState({});
-
+  const [randomQuote, setRandomQuote] = useState(''); 
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   const [openTrainingDialog, setOpenTrainingDialog] = useState(false);
 
   const handleTrainingDialogOpen = () => {
@@ -62,12 +62,32 @@ const Plan = () => {
     }
   };
 
-  useEffect(() => {
+  const fetchRandomQuote = async () => {
     const userId = localStorage.getItem("userId");
-    console.log("User id is:", userId, " and the value !userId is: ", userId)
-    // if (!userId) {
-    //   navigate('/');
-    // }
+    const db = getDatabase();
+    const quotesRef = ref(db, `users/${userId}/motivationalQuotes`);
+  
+    onValue(quotesRef, (snapshot) => {
+      const quotesData = snapshot.val();
+      if (quotesData) {  
+        const allQuotes = Object.values(quotesData);
+        if (allQuotes.length > 0) { 
+          const randomIndex = Math.floor(Math.random() * allQuotes.length);
+          setRandomQuote(allQuotes[randomIndex]);
+        } else {
+          console.log("No quotes available");
+          setRandomQuote("No motivational quotes available at the moment.");
+        }
+      } else {
+        console.log("No quotes found in database.");
+        setRandomQuote("No motivational quotes available at the moment.");
+      }
+    }, { onlyOnce: true });
+  };
+
+  useEffect(() => {
+    fetchRandomQuote();  
+    const userId = localStorage.getItem("userId");
 
     const fetchAveragePaces = async () => {
       const db = getDatabase();
@@ -85,7 +105,11 @@ const Plan = () => {
       }, { onlyOnce: true });
     };
 
-    fetchAveragePaces();
+    if (userId) {
+      fetchAveragePaces();
+    } else {
+   //   navigate('/');
+    }
   }, [navigate]);
   // Function to load NextRun paces from Firebase
   const loadNextRunPaces = async () => {
@@ -121,6 +145,72 @@ const Plan = () => {
     await update(ref(db, `users/${userId}`), { currentDayIndex: newDayIndex });
   };
 
+
+
+  // Helper function to convert meters to miles
+  const metersToMiles = (meters) => {
+    const miles = meters * 0.000621371;
+    return parseFloat(miles.toFixed(2)); // Round to 2 decimal places for precision
+  };
+  
+  const giveFeedbackOnActivityDistance = async (userId, currentDayIndex, db) => {
+    // Calculate which week and day to access based on the currentDayIndex
+    const weekIndex = Math.floor(currentDayIndex / 7);
+    const dayIndex = currentDayIndex % 7;
+  
+    const trainingPlanRef = ref(db, `users/${userId}/trainingPlan/${weekIndex}/days/${dayIndex}`);
+    const activityRef = ref(db, `users/${userId}/activity/activity`);
+    
+    // Fetch training plan for the current day
+    const trainingPlanSnapshot = await get(trainingPlanRef);
+    const trainingPlanDay = trainingPlanSnapshot.val();
+    const plannedDistanceMiles = parseFloat(trainingPlanDay.distance);
+  
+    // Fetch latest activity
+    const activitySnapshot = await get(activityRef);
+    const latestActivity = activitySnapshot.val();
+    const activityDistanceMiles = metersToMiles(latestActivity.distance);
+  
+    // Define thresholds
+    const thresholds = {
+      aBitLess: 0.25, // miles
+      moderateLess: 0.75, // miles
+      hugeLess: 1.5, // miles
+      onTarget: 0.1, // miles
+      aBitMore: 0.25, // miles
+      aLotMore: 0.75, // miles
+      tooMuch: 1.5, // miles
+    };
+  
+    // Calculate the difference
+    const difference = activityDistanceMiles - plannedDistanceMiles;
+  
+    // Determine feedback based on the difference and thresholds
+    let feedback;
+    if (Math.abs(difference) <= thresholds.onTarget) {
+      feedback = `Well done! You ran ${activityDistanceMiles} miles vs the planned ${plannedDistanceMiles} miles! Keep up the good work!`;
+    } else if (difference === activityDistanceMiles) {
+      feedback = "Have a good rest! enjoy your day!";
+    } else if (difference < -thresholds.hugeLess) {
+      feedback = `Well done! You ran ${activityDistanceMiles} miles vs the planned ${plannedDistanceMiles} miles! It seems you're quite far off from today's goal. Let's try to stick closer to the plan tomorrow.`;
+    } else if (difference < -thresholds.moderateLess) {
+      feedback = `Well done! You ran ${activityDistanceMiles} miles vs the planned ${plannedDistanceMiles} miles! You're getting there! Try to match the plan next time.`;
+    } else if (difference < -thresholds.aBitLess) {
+      feedback = `Well done! You ran ${activityDistanceMiles} miles vs the planned ${plannedDistanceMiles} miles! You ran just a bit short today, try to push a little more next time!`;
+    } else if (difference > thresholds.tooMuch) {
+      feedback = `Well done! You ran ${activityDistanceMiles} miles vs the planned ${plannedDistanceMiles} miles! You've exceeded today's goal by a lot. It's great to see your enthusiasm, but be careful not to overdo it!`;
+    } else if (difference > thresholds.aLotMore) {
+      feedback = `Well done! You ran ${activityDistanceMiles} miles vs the planned ${plannedDistanceMiles} miles! You've exceeded today's goal by a lot. It's great to see your enthusiasm, but be careful not to overdo it.`;
+    } else {
+      feedback = `Well done! You ran ${activityDistanceMiles} miles vs the planned ${plannedDistanceMiles} miles! Great effort! But remember, sticking to the plan is key to avoid overtraining.`;
+    }
+  
+    return feedback;
+  };
+
+
+
+
   const handleUpdateLastRun = async () => {
     setLoading(true);
     try {
@@ -142,6 +232,10 @@ const Plan = () => {
 
       // 6. Load updated NextRun paces to reflect in UI
       await loadNextRunPaces();
+          // 7. Give feedback based on the activity distance compared to planned distance
+          const db = getDatabase();
+          const feedback = await giveFeedbackOnActivityDistance(userId, currentDayIndex, db);
+          setFeedbackMessage(feedback); 
 
       console.log('Update Last Run operations and latest activity paces fetched successfully.');
     } catch (error) {
@@ -151,6 +245,26 @@ const Plan = () => {
     }
   };
 
+  const handleRestOrCross = async () => {
+    setLoading(true);
+    try {
+      const userId = localStorage.getItem("userId");
+      // 1. Update the current day 
+      await updateCurrentDay();
+
+      // 7. Give feedback based on the activity distance compared to planned distance
+      const db = getDatabase();
+      const feedback = await giveFeedbackOnActivityDistance(userId, currentDayIndex, db);
+      setFeedbackMessage(feedback); 
+
+      console.log('rest or cross completed successfully.');
+    } catch (error) {
+      console.error('Failed to update day', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const fetchPaceRecommendations = async () => {
     setLoading(true);
     try {
@@ -284,6 +398,31 @@ const Plan = () => {
       setLoading(false);
     }
   };
+  const decrementTrainingDay = async () => {
+    setLoading(true);
+    try {
+      const userId = localStorage.getItem("userId");
+      const userRef = ref(getDatabase(), `users/${userId}`);
+      
+      // Fetch the current day index from Firebase
+      const snapshot = await get(userRef);
+      let currentDayIndex = snapshot.val().currentDayIndex;
+      
+      // Decrement the day index by 1, but not below 0
+      currentDayIndex = Math.max(currentDayIndex - 1, 0);
+  
+      // Update the currentDayIndex in Firebase
+      await update(userRef, { currentDayIndex });
+  
+      console.log(`Training day has been decremented to day ${currentDayIndex + 1}.`);
+    } catch (error) {
+      console.error("Error decrementing the training day:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  
   const fetchActivityAndLaps = async () => {
     setLoading(true);
     try {
@@ -315,9 +454,22 @@ const Plan = () => {
     }
   };
 
+  const getImageUrlForActivity = (activity) => {
+    if (activity.includes('easy run')) {
+      return roadImage; // this will be the image for an easy run
+    } else if (activity.includes('long run')) {
+      return longroad; // this will be the image for a long run
+    } else if (activity === 'Rest') {
+      return restroad; // this will be the image for a rest day
+  } else if (activity.includes('Cross')) {
+    return crossroad; 
+  } else if (activity.includes('Half Marathon')) {
+    return runrun; 
+  } else if (activity.includes('Marathon')) {
+    return temporoad; 
 
-  const getImageUrlForActivity = (activityDescription) => {
-    return roadImage;
+  }
+    return roadImage; // default image if activity doesn't match any conditions
   };
 
   const getLatestPlan = async () => {
@@ -349,10 +501,17 @@ const Plan = () => {
     await fetchStravaInfo();
     window.location.reload();
   }
+  const addQuotesToDatabase = async () => {
+    const db = getDatabase();
+    const userId = localStorage.getItem("userId");
+    const quotesRef = ref(db, `users/${userId}/motivationalQuotes`);
+    await set(quotesRef, quotes);
+  };
 
+  
   const setup = async () => {
 
-
+    await addQuotesToDatabase();
     // 1. Start training plan
     await startTrainingPlan1();
 
@@ -377,6 +536,12 @@ const Plan = () => {
         break;
       case 'resetTrainingDay':
         resetTrainingDay();
+        break;
+        case 'decrementTrainingDay':
+          decrementTrainingDay();
+        break;
+        case 'setup':
+          setup();
         break;
       default:
         console.log("Unhandled action:", action);
@@ -424,15 +589,19 @@ const Plan = () => {
         </Paper>
       )}
 
+
+
       <DataInfo averagePaces={averagePaces} recommendedPaceNextRun={recommendedPaceNextRun} currentDayIndex={currentDayIndex} setCurrentDayIndex={setCurrentDayIndex}
         startingPace={startingPace} corePace={corePace} finishingPace={finishingPace} getImageUrlForActivity={getImageUrlForActivity}
         nextRunPaces={nextRunPaces} openDialog={openDialog} handleCloseDialog={handleCloseDialog} start={start}
-        setup={setup} handleUpdateLastRun={handleUpdateLastRun} handleTriggerButtonClick={handleTriggerButtonClick}
-        loading={loading} trainingPlan={trainingPlan} openTrainingDialog={openTrainingDialog} onCloseTrainingDialog={handleTrainingDialogClose} />
+        setup={setup} handleUpdateLastRun={handleUpdateLastRun} handleTriggerButtonClick={handleTriggerButtonClick} handleRestOrCross={handleRestOrCross }
+        loading={loading} trainingPlan={trainingPlan} openTrainingDialog={openTrainingDialog} onCloseTrainingDialog={handleTrainingDialogClose} 
+        randomQuote={randomQuote} feedbackMessage={feedbackMessage} />
       <Footer />
     </>
   );
 
 };
-//from here
 export default Plan;
+
+//////from here

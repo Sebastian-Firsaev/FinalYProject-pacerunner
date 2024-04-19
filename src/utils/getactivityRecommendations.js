@@ -40,8 +40,8 @@ const getactivityRecommendations = async (userId) => {
       const lapsForCorePace = pacePerLap.slice(3, -3);
       const corePace = lapsForCorePace.length > 0 ? median(lapsForCorePace) : median(pacePerLap); // Use median of all if exclusion results in empty
 
-      const startingPace = average(pacePerLap.slice(0, 3)) * 1.01;
-      const finishingPace = average(pacePerLap.slice(-3)) * 0.99;
+      const startingPace = average(pacePerLap.slice(0, 3)) * 0.99;
+      const finishingPace = average(pacePerLap.slice(-3)) * 1.01;
 
       const paceRecommendations = {
         startingPace: formatPace(startingPace),

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Button, CircularProgress } from '@mui/material';
 import { motion } from 'framer-motion';
+import TouchAppIcon from '@mui/icons-material/TouchApp';
 
-const HoverableButtons = ({ start, setup, handleUpdateLastRun, handleTriggerButtonClick, loading }) => {
+const HoverableButtons = ({ start, setup, handleUpdateLastRun, handleTriggerButtonClick, loading, handleRestOrCross }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleClick = () => {
@@ -22,14 +23,14 @@ const HoverableButtons = ({ start, setup, handleUpdateLastRun, handleTriggerButt
 
   const buttonStyle = {
     borderRadius: '8px',
-    padding: '12px 24px',
+    padding: '16px 30px', // Increased padding
     backgroundColor: '#3f51b5',
     color: 'white',
     cursor: 'pointer',
     outline: 'none',
     border: 'none',
     fontFamily: 'inherit',
-    fontSize: '16px',
+    fontSize: '20px', // Increased font size
     transition: 'all 0.3s ease',
     display: 'flex',
     alignItems: 'center',
@@ -42,46 +43,49 @@ const HoverableButtons = ({ start, setup, handleUpdateLastRun, handleTriggerButt
   };
 
   return (
-    <Box  display="flex" flexDirection="column" alignItems="center">
+    <Box display="flex" flexDirection="column" alignItems="center">
+<motion.div
+  style={buttonStyle}
+  whileHover={{ backgroundColor: '#ff5722' }}
+  onClick={handleClick}
+>
+  {isOpen ? (
+    <><span></span><TouchAppIcon sx={{ marginLeft: 1 }} /></>
+  ) : (
+    <><span>Start and upload runs</span><TouchAppIcon sx={{ marginLeft: 1 }} /></>
+  )}
+</motion.div>
       <motion.div
         style={{ ...containerStyle, visibility: isOpen ? 'visible' : 'hidden' }}
-        animate={{ opacity: isOpen ? 1 : 0, scale: isOpen ? 1 : 0.5 }}
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: isOpen ? 0 : -20, opacity: isOpen ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
       >
         <motion.button
-          style={{ ...buttonStyle, ...hoverStyle }}
+          style={{ ...buttonStyle }}
+          whileHover={{ ...hoverStyle }}
           onClick={start}
           disabled={loading}
         >
           {loading ? <CircularProgress size={24} /> : 'Start'}
         </motion.button>
         <motion.button
-          style={{ ...buttonStyle, ...hoverStyle }}
-          onClick={setup}
+          style={{ ...buttonStyle }}
+          whileHover={{ ...hoverStyle }}
+          onClick={handleRestOrCross}
           disabled={loading}
         >
-          {loading ? <CircularProgress size={24} /> : 'Setup'}
+          {loading ? <CircularProgress size={24} /> : 'Rest Or Cross'}
         </motion.button>
         <motion.button
-          style={{ ...buttonStyle, ...hoverStyle }}
+          style={{ ...buttonStyle }}
+          whileHover={{ ...hoverStyle }}
           onClick={handleUpdateLastRun}
           disabled={loading}
         >
           {loading ? <CircularProgress size={24} /> : 'Update Last Run'}
         </motion.button>
-        <motion.button
-          style={{ ...buttonStyle, ...hoverStyle }}
-          onClick={handleTriggerButtonClick}
-          disabled={loading}
-        >
-          {loading ? <CircularProgress size={24} /> : 'Trigger Comparison and Storage'}
-        </motion.button>
-      </motion.div>
-      <motion.div
-        style={{ ...buttonStyle, ...containerStyle, cursor: 'pointer' }}
-        whileHover={{ backgroundColor: isOpen ? '#ff5722' : '#3f51b5' }}
-        onClick={handleClick}
-      >
-        {isOpen ? '-' : '+'}
+
       </motion.div>
     </Box>
   );
